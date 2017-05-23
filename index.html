@@ -37,12 +37,11 @@ table, th, td {
 .spell {
 	width: 100%;
 	border: 1px solid black;
-	height: 50px;
 	display: flex;
-	flex-flow: row nowrap;
+	flex-flow: row wrap;
 	justify-content: center
 }
-.block {
+.block, .placeholder {
 	display: inline-block;
 	width: 50px;
 	height: 50px;
@@ -53,58 +52,220 @@ table, th, td {
 	background-color: teal;
 	color: white;
 }
+.words {
+	white-space: nowrap;
+	text-align: justify;
+	clear: both;
+}
+.words div {
+	margin-left: 5px;
+	float: left;
+	/*display: none;*/
+}
+/*.words .selected {
+	display: block;
+}*/
 </style>
 </head>
 
 <script>
+// https://threejs.org/examples/css3d_periodictable.html
+var symbols = []
 $.expr[":"].contains = $.expr.createPseudo(function (arg) {
 	return function (elem) {
 		return $(elem).text().toUpperCase().indexOf(arg.toUpperCase()) >= 0;
 	};
 });
+function highlight() {
+	$('.table .selected').removeClass('selected')
+	$('.spell .block').addClass('selected')
+	$('.words .selected').each(function() {
+		var word = $(this).text()
+		$('.table .block').each(function() {
+			if (word.indexOf($(this).text().toLowerCase()) > -1) {
+				$(this).addClass('selected')
+			}
+		})
+	})
+
+}
 $(function() {
-	$(document).on('click', '.block', function(e) {
+	$(document).on('click', '.table .block', function(e) {
 		e.preventDefault()
-		$(".spell").append($(this).clone())
+		$(".spell:eq(0)").append($(this).clone())
+		$('.words div').show()
+		$('.spell:eq(0) .block').each(function() {
+			$('.words div:not(:contains("'+$(this).text()+'"))').hide()
+		})
+		$('.spell .block').addClass('selected')
+
+	})
+	$(document).on('click', '.spell .block', function(e) {
+		$(this).remove()
+		$('.words div').show()
+		$('.spell:eq(0) .block').each(function() {
+			$('.words div:not(:contains("'+$(this).text()+'"))').hide()
+		})
+		$('.spell .block').addClass('selected')
+
+	})
+
+
+
+
+	$(document).on('dblclick', '.spell:eq(0)', function(e) {
+		$(this).before($('<div></div>', {class: 'spell'}))
+	})
+
+
+	function recurse(word) {
+		if (word.length <= 1)  {return word}
+		// if (symbols.includes(word)) {return word }
+		for(var i = 0; i < word.length; i++) {
+			// if ($('.table .block').filter(function() {return $(this).text().toLowerCase() === word[i]}).length > 0) {
+			if (symbols.includes(word[i])) {
+				log(word[i], word.substr(i+1))
+				recurse(word.substr(i+1))
+			}
+			// if ($('.table .block').filter(function() {return $(this).text().toLowerCase() === word.substr(i, 2)})) {
+			if (symbols.includes(word.substr(i, 2))) {
+				log(word.substr(i, 2), word.substr(i+2))
+				recurse(word.substr(i+2))
+			}
+		}
+
+
+	}
+
+	$(document).on('click', '.words div', function(e) {
+		$('.words .selected').removeClass('selected')
+
+		$(this).addClass('selected')
+		var word = $(this).text()
+		recurse(word)
+
+
+
+
+
+		highlight()
+
 	})
 	$(document).on('keydown', function(e) {
 		// /[a-zA-Z0-9-_ ]/.test(e.which)
 		if (e.ctrlKey) {
 			return
 		}
-		if (e.which <= 65 && e.which >= 90) {
-
+		if (e.which === 8 || e.which === 123) {
 			return
 		}
-		e.preventDefault()
+		if (e.which <= 65 && e.which >= 90) {
+			return
+		}
 
+		e.preventDefault()
+		if (e.which === 8) {
+			$('.table .block').removeClass('selected')
+		}
 		$('.table .block').removeClass('selected')
-		$('.table .block:contains("'+String.fromCharCode(e.which).toLowerCase()+'")').addClass('selected')
+		$('.table .block').each(function() {
+			if ($(this).text()[0].toLowerCase() === String.fromCharCode(e.which).toLowerCase()) {
+				$(this).addClass('selected')
+			}
+		})
+		$('.spell .block').addClass('selected')
+
 	})
-	$.post('elements.json', function(elements) {
+
+
+
+
+
+
+	$.get('elements.json', function(elements) {
 		$.each(elements, function(i, element) {
-			log(element)
+			symbols.push(element.symbol.toLowerCase())
 			$('.table').append($('<div></div>', {class: 'block', text: element.symbol, title: element.name}))
 		})
 		$(".spell .block").draggable({helper: 'clone', opacity: 0.7});
-		// $(".spell .block").draggable({
-		// 	start: function() {
-		// 		var drgClone = $(this).clone(true);
-		// 	}
-		// })
 		$(".spell").sortable()
-		// $(".spell").droppable({
-		// 	accept: '.block',
-		// 	drop: function(event, ui) {
-		// 		$(this).append($(ui.draggable).clone());
-		// 	}
-		// })
+	})
+	$.get('google-10000-english.txt', function(words) {
+		words = words.split('\n')
+		$.each(words, function(i, word) {
+			if (word.length < 2) {return}
+			$('.words').append($('<div></div>', {text: word}))
+		})
+		$('.words').prepend($('<div></div>', {text: 'costs'}))
 
 	})
 })
 </script>
 <body>
 <div class='table'></div>
-<div class='spell'></div>
+<div class='spell ui-sortable'></div>
+<div class='spell ui-sortable'>
+	issues populate process black back contention say yes baby very stare LiFe ReAsSURe SOCIAl office Ho FO SHo show wit witty
+	<div class='block selected'>S</div>
+	<div class='block selected'>He</div>
+	<div class='placeholder'></div>
+	<div class='block selected'>Ga</div>
+	<div class='block selected'>Y</div>
+	<div class='placeholder'></div>
+	<div class='block selected'>Ra</div>
+	<div class='block selected'>Ce</div>
+	<div class='placeholder'></div>
+    <div class='block selected'>Cr</div>
+    <div class='block selected'>Ac</div>
+    <div class='block selected'>K</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Cl</div>
+    <div class='block selected'>Ac</div>
+    <div class='block selected'>K</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>F</div>
+    <div class='block selected'>Ra</div>
+    <div class='block selected'>C</div>
+    <div class='block selected'>K</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Pr</div>
+    <div class='block selected'>Og</div>
+    <div class='block selected'>Re</div>
+    <div class='block selected'>S</div>
+    <div class='block selected'>S</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Po</div>
+    <div class='block selected'>O</div>
+    <div class='block selected'>P</div>
+    <div class='block selected'>Y</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Fe</div>
+    <div class='block selected'>Ar</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>H</div>
+    <div class='block selected'>Y</div>
+    <div class='block selected'>Po</div>
+    <div class='block selected'>Th</div>
+    <div class='block selected'>Es</div>
+    <div class='block selected'>I</div>
+    <div class='block selected'>S</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Te</div>
+    <div class='block selected'>C</div>
+    <div class='block selected'>H</div>
+    <div class='block selected'>N</div>
+    <div class='block selected'>O</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Po</div>
+    <div class='block selected'>Li</div>
+    <div class='block selected'>Ti</div>
+    <div class='block selected'>C</div>
+    <div class='block selected'>Al</div>
+    <div class='placeholder'></div>
+    <div class='block selected'>Po</div>
+    <div class='block selected'>W</div>
+    <div class='block selected'>Er</div>
+</div>
+<div class='words'></div>
 </body>
 </html>
